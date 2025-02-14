@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practo Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .search-bar {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .button-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .button-container button {
+            padding: 12px 20px;
+            margin: 0 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button-container button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .results h2 {
+            margin-bottom: 20px;
+        }
+        .result-item {
+            background-color: #fff;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .result-item h3 {
+            margin: 0 0 10px;
+        }
+        .result-item p {
+            margin: 0;
+        }
+        .error {
+            color: red;
+        }
+        .view-doctors-btn, .view-details-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .view-doctors-btn:hover, .view-details-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Practo Search</h1>
+            <input type="text" id="search-bar" class="search-bar" placeholder="Search by name or specialization..." oninput="search()">
+        </div>
+
+        <div class="button-container">
+            <button onclick="showDoctors()">View All Doctors</button>
+            <button onclick="showPractices()">View All Clinics</button>
+        </div>
+
+        <div class="results" id="results"></div>
+        <div id="error-message" class="error"></div>
+    </div>
+
+    <script>
+        function search() {
+            const searchQuery = document.getElementById('search-bar').value.trim();
+            const resultsContainer = document.getElementById('results');
+            const errorMessage = document.getElementById('error-message');
+
+            errorMessage.innerHTML = "";
+            resultsContainer.innerHTML = "";
+
+            if (searchQuery.length < 3) return;
+
+            const isDoctorSearch = searchQuery.toLowerCase().includes("dr");
+
+            const endpoint = isDoctorSearch 
+                ? `http://127.0.0.1:5000/doctors?name=${encodeURIComponent(searchQuery)}` 
+                : `http://127.0.0.1:5000/practices?name=${encodeURIComponent(searchQuery)}`;
+
+            fetch(endpoint)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.length === 0) {
+                        errorMessage.innerHTML = "No results found.";
+                        return;
+                    }
+
+                    data.forEach(item => {
+                        const resultDiv = document.createElement('div');
+                        resultDiv.classList.add('result-item');
+
+                        if (isDoctorSearch) {
+                            resultDiv.innerHTML = `
+                                <h3>Doctor: ${item.name}</h3>
+                                <p>Email: ${item.email}</p>
+                                <p>Qualifications: ${item.qualifications}</p>
+                                <button class="view-details-btn" onclick="loadDoctors(${item.id})">View Details</button>
+                            `;
+                        } else {
+                            resultDiv.innerHTML = `
+                                <h3>Practice: ${item.name}</h3>
+                                <p>City: ${item.city}</p>
+                                <p>Address: ${item.address}</p>
+                                <p>State: ${item.state}</p>
+                                <p>Contact Number: ${item.contact_number}</p>
+                                <button class="view-doctors-btn" onclick="loadDoctors(${item.id})">View Doctors</button>
+                            `;
+                        }
+
+                        resultsContainer.appendChild(resultDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    errorMessage.innerHTML = "An error occurred while fetching data.";
+                });
+        }
+
+        function loadDoctors(practiceId) {
+            const resultsContainer = document.getElementById('results');
+
+            fetch(`http://127.0.0.1:5000/practices/${practiceId}/doctors`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        resultsContainer.innerHTML = "No doctors available for this practice.";
+                        return;
+                    }
+
+                    let doctorList = "<h4>Doctor List:</h4>";
+
+                    data.forEach(doctor => {
+                        doctorList += `
+                            <div>
+                                <h5>Doctor: ${doctor.name}</h5>
+                                <p>Email: ${doctor.email}</p>
+                                <p>Qualifications: ${doctor.qualifications}</p>
+                                <p>Availability: ${doctor.availability}</p>
+                                <p>Consultation Fee: ₹${doctor.consultation_fee}</p>
+                            </div>
+                        `;
+                    });
+
+                    resultsContainer.innerHTML = doctorList;
+                })
+                .catch(error => {
+                    console.error('Error fetching doctors:', error);
+                    resultsContainer.innerHTML = "An error occurred while fetching doctors.";
+                });
+        }
+
+        function showDoctors() {
+            const resultsContainer = document.getElementById('results');
+            fetch('http://127.0.0.1:5000/doctors')
+                .then(response => response.json())
+                .then(data => {
+                    let doctorsList = "<h3>All Doctors:</h3>";
+
+                    data.forEach(doctor => {
+                        doctorsList += `
+                            <p><strong>${doctor.name}</strong></p>
+                            <p>Email: ${doctor.email}</p>
+                            <p>Qualifications: ${doctor.qualifications}</p>
+                            <hr>
+                        `;
+                    });
+
+                    resultsContainer.innerHTML = doctorsList;
+                })
+                .catch(error => {
+                    console.error('Error fetching doctors:', error);
+                    resultsContainer.innerHTML = "An error occurred while fetching doctors.";
+                });
+        }
+
+        function showPractices() {
+            const resultsContainer = document.getElementById('results');
+            fetch('http://127.0.0.1:5000/practices')
+                .then(response => response.json())
+                .then(data => {
+                    let practicesList = "<h3>All Practices:</h3>";
+
+                    data.forEach(practice => {
+                        practicesList += `
+                            <p><strong>${practice.name}</strong></p>
+                            <p>City: ${practice.city}</p>
+                            <p>Address: ${practice.address}</p>
+                            <p>State: ${practice.state}</p>
+                            <p>Contact Number: ${practice.contact_number}</p>
+                            <hr>
+                        `;
+                    });
+
+                    resultsContainer.innerHTML = practicesList;
+                })
+                .catch(error => {
+                    console.error('Error fetching practices:', error);
+                    resultsContainer.innerHTML = "An error occurred while fetching practices.";
+                });
+        }
+    </script>
+</body>
+</html>
