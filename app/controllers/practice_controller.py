@@ -1,53 +1,56 @@
-from flask import Blueprint, request, jsonify
-from app.models import Doctor, DoctorPractice, Practice, db
-from app.services.elasticsearch_service import index_practice 
+from flask import Blueprint, request, jsonify,render_template
+from app.models import Practice, db
+from app.services.elasticsearch_service import PRACTICE_INDEX, index_practice, search_practices
 
 practice_bp = Blueprint('practice_bp', __name__)
 
 @practice_bp.route('/', methods=['GET'])
-def get_practices():
+def get_practice():
     name_query = request.args.get('name', default=None, type=str)
     
-    if name_query:
-        practices = Practice.query.filter(Practice.name.ilike(f"%{name_query}%")).all()
+    if not name_query:
+        practices = search_practices(name_query)
     else:
-        practices = Practice.query.all()
-
+        practices = es.search(index=PRACTICE_INDEX, body={
+            "query": {
+                "wildcard": {
+                    "name": f"*{name_query}*"
+                }
+            }
+        })['hits']['hits']
+    
     return jsonify([
         {"id": p.id, "name": p.name, "city": p.city, "address": p.address, 
-         "state": p.state, "contact_number": p.contact_number, "email": p.email} 
+      "state": p.state, "contact_number": p.contact_number, "email": p.email}
         for p in practices
     ])
 
-# Add new practice
 @practice_bp.route('/add', methods=['POST'])
 def add_practice():
     data = request.json
+   
     new_practice = Practice(
         name=data['name'],
         address=data['address'],
         city=data['city'],
         state=data['state'],
         contact_number=data['contact_number'],
-        email=data['email'],
+        email=data['email']
     )
     db.session.add(new_practice)
     db.session.commit()
     index_practice(new_practice)
+
     return jsonify({"message": "Practice added successfully"})
+@practice_bp.route('/add_practice', methods=['GET'])
+def add_practice_page():
+    return render_template('add_practice.html')
 
 
-@practice_bp.route('/<int:practice_id>/doctors', methods=['GET'])
-def get_doctors_for_practice(practice_id):
-    doctor_practices = db.session.query(DoctorPractice).filter_by(practice_id=practice_id).all()
-    doctor_ids = [dp.doctor_id for dp in doctor_practices]
-    doctors = Doctor.query.filter(Doctor.id.in_(doctor_ids)).all()
-
-    return jsonify([
-        {"id": d.id, "name": d.name, "email": d.email, "qualifications": d.qualifications, 
-         "availability": next((dp.availability for dp in doctor_practices if dp.doctor_id == d.id), ""),
-         "consultation_fee": next((dp.consultation_fee for dp in doctor_practices if dp.doctor_id == d.id), "")}
-        for d in doctors
-    ])
-
+@practice_bp.route('/sync', methods=['POST'])
+def sync_practices():
+    practices = Practice.query.all()
+    for practice in practices:
+        index_practice(practice)
+    return jsonify({"message": "Practices synced successfully with Elasticsearch"})
 

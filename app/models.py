@@ -13,8 +13,7 @@ class Doctor(db.Model):
     description = db.Column(db.Text)
     contact_number = db.Column(db.String(15))
     email = db.Column(db.String(255), unique=True)
-    #practices = db.relationship('Practice', secondary='doctor_practice', backref="associated_doctors")
-
+    
 class Practice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
@@ -23,8 +22,7 @@ class Practice(db.Model):
     state = db.Column(db.String(100), nullable=False)
     contact_number = db.Column(db.String(15))
     email = db.Column(db.String(255), unique=True)
-    #doctors = db.relationship('Doctor', secondary='doctor_practice', backref="associated_practices")
-
+    
 class DoctorSpecialization(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctor.id'), nullable=False)

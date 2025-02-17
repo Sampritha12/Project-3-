@@ -1,124 +1,203 @@
 from elasticsearch import Elasticsearch
+from app.models import Doctor, Practice ,Specialization,DoctorPractice,DoctorSpecialization,PracticeSpecialization
 
-# Initialize Elasticsearch connection
-es = Elasticsearch([{'host': 'localhost', 'port': 9200, 'scheme': 'http'}],
-                   basic_auth=("elastic", "changeme"))
+es = Elasticsearch(["http://localhost:9200"])
+DOCTOR_INDEX = "doctors"
+PRACTICE_INDEX = "practices"
+SPECIALIZATION_INDEX = "specialization"
+DOCTOR_SPECIALIZATION_INDEX = "doctor_specialization"
+PRACTICE_SPECIALIZATION_INDEX = "practice_specialization"
+DOCTOR_PRACTICE_INDEX = "doctor_practice"
 
-# Function to index a doctor in Elasticsearch
+doctor_mapping = {
+    "mappings": {
+        "properties": {
+            "name": {"type": "text"},
+            "qualifications": {"type": "text"},
+            "experience_years": {"type": "integer"},
+            "description": {"type": "text"},
+            "contact_number": {"type": "keyword"},
+            "email": {"type": "keyword"}
+        }
+    }
+}
+
+if not es.indices.exists(index=DOCTOR_INDEX):
+    es.indices.create(index=DOCTOR_INDEX, mappings=doctor_mapping["mappings"])
+
+practice_mapping = {
+    "mappings": {
+        "properties": {
+            "name": {"type": "text"},
+            "address": {"type": "text"},
+            "city": {"type": "text"},
+            "state": {"type": "text"},
+            "contact_number": {"type": "keyword"},
+            "email": {"type": "keyword"}
+        }
+    }
+}
+
+if not es.indices.exists(index=PRACTICE_INDEX):
+    es.indices.create(index=PRACTICE_INDEX, body=practice_mapping)
+
 def index_doctor(doctor):
-    document = {
+    es.index(index=DOCTOR_INDEX, id=doctor.id, body={
         "name": doctor.name,
-        "email": doctor.email,
         "qualifications": doctor.qualifications,
         "experience_years": doctor.experience_years,
-        "specializations": [specialization.name for specialization in doctor.specializations],
         "description": doctor.description,
         "contact_number": doctor.contact_number,
+        "email": doctor.email
+    },refresh="wait_for")
+def search_doctors(name_query):
+    query = {
+        "query": {
+            "wildcard": {
+                "name": f"*{name_query}*"
+            }
+        }
     }
-    es.index(index="doctors", id=doctor.id, body=document)
+    response = es.search(index=DOCTOR_INDEX, body=query)
+    return response['hits']['hits']
 
 def index_practice(practice):
-    document = {
+    es.index(index=PRACTICE_INDEX, id=practice.id, body={
         "name": practice.name,
-        "city": practice.city,
         "address": practice.address,
+        "city": practice.city,
+        "state": practice.state,
         "contact_number": practice.contact_number,
-        "email": practice.email,
-        "specializations": [specialization.name for specialization in practice.specializations],
+        "email": practice.email
+    })
+def search_practices(query):
+    response = es.search(index=PRACTICE_INDEX, body={
+        "query": {
+            "multi_match": {
+                "query": query,
+                "fields": ["name", "address", "city", "state"]
+            }
+        }
+    })
+    return [hit["_source"] for hit in response['hits']['hits']]
+def index_specializations():
+    specializations = Specialization.query.all()
+    
+    for specialization in specializations:
+        es.index(index="specialization_index", id=specialization.id, body={
+            "id": specialization.id,
+            "name": specialization.name,
+            "description": specialization.description
+        })
+    
+    print("Specializations indexed successfully!")
+
+
+def index_doctor_practice():
+    doctor_practices = db.session.execute("""
+        SELECT dp.id, dp.doctor_id, dp.practice_id, dp.availability, dp.consultation_fee,
+               d.name AS doctor_name, p.name AS practice_name
+        FROM doctor_practice dp
+        JOIN doctor d ON dp.doctor_id = d.id
+        JOIN practice p ON dp.practice_id = p.id
+    """).fetchall()
+
+    for dp in doctor_practices:
+        es.index(index="doctor_practice_index", id=dp.id, body={
+            "id": dp.id,
+            "doctor": {"id": dp.doctor_id, "name": dp.doctor_name},
+            "practice": {"id": dp.practice_id, "name": dp.practice_name},
+            "availability": dp.availability,
+            "consultation_fee": dp.consultation_fee
+        })
+    
+    print("Doctor-Practice relationships indexed successfully!")
+
+def index_doctor_specialization():
+    doctor_specializations = db.session.execute("""
+        SELECT ds.id, ds.doctor_id, ds.specialization_id,
+               d.name AS doctor_name, s.name AS specialization_name
+        FROM doctor_specialization ds
+        JOIN doctor d ON ds.doctor_id = d.id
+        JOIN specialization s ON ds.specialization_id = s.id
+    """).fetchall()
+
+    for ds in doctor_specializations:
+        es.index(index="doctor_specialization_index", id=ds.id, body={
+            "id": ds.id,
+            "doctor": {"id": ds.doctor_id, "name": ds.doctor_name},
+            "specialization": {"id": ds.specialization_id, "name": ds.specialization_name}
+        })
+    
+    print("Doctor-Specialization relationships indexed successfully!")
+
+def index_practice_specialization():
+    practice_specializations = db.session.execute("""
+        SELECT ps.id, ps.practice_id, ps.specialization_id,
+               p.name AS practice_name, s.name AS specialization_name
+        FROM practice_specialization ps
+        JOIN practice p ON ps.practice_id = p.id
+        JOIN specialization s ON ps.specialization_id = s.id
+    """).fetchall()
+
+    for ps in practice_specializations:
+        es.index(index="practice_specialization_index", id=ps.id, body={
+            "id": ps.id,
+            "practice": {"id": ps.practice_id, "name": ps.practice_name},
+            "specialization": {"id": ps.specialization_id, "name": ps.specialization_name}
+        })
+    
+    print("Practice-Specialization relationships indexed successfully!")
+
+specialization_mapping = {
+    "mappings": {
+        "properties": {
+            "name": {"type": "text"},
+            "description": {"type": "text"}
+        }
     }
-    es.index(index="practices", id=practice.id, body=document)
+}
 
-# Function to search doctors in Elasticsearch
-def search_doctors_in_es(name=None, specialization=None):
-    query = {"bool": {"must": []}}
+doctor_specialization_mapping = {
+    "mappings": {
+        "properties": {
+            "doctor_id": {"type": "integer"},
+            "specialization_id": {"type": "integer"}
+        }
+    }
+}
 
-    if name:
-        query["bool"]["must"].append({
-            "match": {
-                "name": {
-                    "query": name,
-                    "operator": "and"  
-                }
-            }
-        })
+practice_specialization_mapping = {
+    "mappings": {
+        "properties": {
+            "practice_id": {"type": "integer"},
+            "specialization_id": {"type": "integer"}
+        }
+    }
+}
 
-    if specialization:
-        query["bool"]["must"].append({
-            "match": {
-                "specializations": {
-                    "query": specialization,
-                    "operator": "and"
-                }
-            }
-        })
+doctor_practice_mapping = {
+    "mappings": {
+        "properties": {
+            "doctor_id": {"type": "integer"},
+            "practice_id": {"type": "integer"},
+            "availability": {"type": "text"},
+            "consultation_fee": {"type": "integer"}
+        }
+    }
+}
 
-    response = es.search(index="doctors", body={"query": query})
+if not es.indices.exists(index=SPECIALIZATION_INDEX):
+    es.indices.create(index=SPECIALIZATION_INDEX, body=specialization_mapping)
 
-    doctors = []
-    for hit in response['hits']['hits']:
-        doctor = hit['_source']
-        doctors.append({
-            "id": hit['_id'],
-            "name": doctor['name'],
-            "email": doctor['email'],
-            "qualifications": doctor['qualifications'],
-            "experience_years": doctor['experience_years'],
-            "specializations": doctor['specializations'],
-            "description": doctor['description'],
-            "contact_number": doctor['contact_number'],
-        })
+if not es.indices.exists(index=DOCTOR_SPECIALIZATION_INDEX):
+    es.indices.create(index=DOCTOR_SPECIALIZATION_INDEX, body=doctor_specialization_mapping)
 
-    return doctors
+if not es.indices.exists(index=PRACTICE_SPECIALIZATION_INDEX):
+    es.indices.create(index=PRACTICE_SPECIALIZATION_INDEX, body=practice_specialization_mapping)
 
-def search_practices_in_es(name=None, specialization=None):
-    query = {"bool": {"must": []}}
+if not es.indices.exists(index=DOCTOR_PRACTICE_INDEX):
+    es.indices.create(index=DOCTOR_PRACTICE_INDEX, body=doctor_practice_mapping)
 
-    if name:
-        query["bool"]["must"].append({
-            "match": {
-                "name": {
-                    "query": name,
-                    "operator": "and"
-                }
-            }
-        })
 
-    if specialization:
-        query["bool"]["must"].append({
-            "match": {
-                "specializations": {
-                    "query": specialization,
-                    "operator": "and"
-                }
-            }
-        })
 
-    response = es.search(index="practices", body={"query": query})
-
-    # Parse the search response to return practice data with full profile
-    practices = []
-    for hit in response['hits']['hits']:
-        practice = hit['_source']
-        practices.append({
-            "id": hit['_id'],
-            "name": practice['name'],
-            "address": practice['address'],
-            "city": practice['city'],
-            "specializations": practice['specializations'],
-            "doctors": practice.get('doctors', []),  # Handle missing field safely
-            "contact_number": practice['contact_number'],
-            "email": practice['email'],
-            "website": practice.get('website', '')  # Handle missing field safely
-        })
-
-    return practices
-
-# Function to search a doctor by ID in Elasticsearch
-def search_doctor_by_id_in_es(doctor_id):
-    response = es.get(index="doctors", id=doctor_id, ignore=404)
-    return response["_source"] if response.get("found") else None
-
-# Function to search a practice by ID in Elasticsearch
-def search_practice_by_id_in_es(practice_id):
-    response = es.get(index="practices", id=practice_id, ignore=404)
-    return response["_source"] if response.get("found") else None

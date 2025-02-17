@@ -1,60 +1,102 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,render_template
 from app.models import Doctor, db
-from app.services.elasticsearch_service import index_doctor 
+from app.services.elasticsearch_service import index_doctor, index_doctor_practice, index_practice, index_specializations, search_doctors
+from elasticsearch import Elasticsearch
+
+
 
 doctor_bp = Blueprint('doctor_bp', __name__)
+es = Elasticsearch(["http://localhost:9200"])
+DOCTOR_INDEX = "doctors"
 
 @doctor_bp.route('/', methods=['GET'])
 def get_doctor():
     name_query = request.args.get('name', default=None, type=str)
     
-    if name_query:
-        doctors = Doctor.query.filter(Doctor.name.ilike(f"%{name_query}%")).all()
+    if not name_query:
+        doctors = search_doctors(name_query)
     else:
-        doctors = Doctor.query.all()
+         doctors = es.search(index=DOCTOR_INDEX, body={"query": {"match_all": {}}})['hits']['hits']
     
     return jsonify([
-        {"id": d.id, "name": d.name, "email": d.email, "qualifications": d.qualifications} 
-        for d in doctors
-    ])
+    {
+       "id": d["_id"],
+        "name": d["_source"]["name"],
+        "email": d["_source"]["email"],
+        "qualifications": d["_source"]["qualifications"],
+        "contact_number": d["_source"]["contact_number"],
+        "description": d["_source"]["description"],  
+        "experience_years": d["_source"]["experience_years"],
+        "specialization": d["_source"]["specialization"] 
+
+
+    }
+    for d in doctors
+])
+
 
 @doctor_bp.route('/add', methods=['POST'])
 def add_doctor():
-    data = request.json
-    new_doctor = Doctor(
-        name=data['name'], 
-        qualifications=data['qualifications'],
-        experience_years=data['experience_years'], 
-        description=data['description'], 
-        contact_number=data['contact_number'], 
-        email=data['email']
-    )
-    db.session.add(new_doctor)
-    db.session.commit()
-    index_doctor(new_doctor)
-    return jsonify({"message": "Doctor added successfully"})
+    try:
+        data = request.get_json()  
+        if not data:
+            return jsonify({"error": "Invalid JSON data"}), 400
+        required_fields = ["name", "qualifications", "experience_years", "description", "contact_number", "email"]
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"error": f"Missing field: {field}"}), 400
 
-# @doctor_bp.route('/<int:doctor_id>')
-# def doctor_profile(doctor_id):
-#     doctor = db.session.query(Doctor).get(doctor_id)  # Query with db.session
-#     if not doctor:
-#         abort(404)
-#     return render_template('doctor_profile.html', doctor=doctor)
+        new_doctor = Doctor(
+            name=data["name"],
+            qualifications=data["qualifications"],
+            experience_years=data["experience_years"],
+            description=data["description"],
+            contact_number=data["contact_number"],
+            email=data["email"]
+        )
+        db.session.add(new_doctor)
+        db.session.commit()
 
-@doctor_bp.route('/search/doctors', methods=['GET'])
-def search_doctors():
-    name = request.args.get('name', '')
+        try:
+            index_doctor(new_doctor)
+        except Exception as es_error:
+            return jsonify({"error": f"Elasticsearch sync failed: {str(es_error)}"}), 500
 
-    # Query doctors whose names contain the search term (case-insensitive)
-    doctors = Doctor.query.filter(Doctor.name.ilike(f"%{name}%")).all()
+        return jsonify({"message": "Doctor added successfully!"}), 200
 
-    return jsonify([
-        {
-            "id": d.id,
-            "name": d.name,
-            "email": d.email,
-            "qualifications": d.qualifications
-        } 
-        for d in doctors
-    ])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@doctor_bp.route('/add_doctor', methods=['GET'])
+def add_doctor_page():
+    return render_template('add_doctor.html')
+
+
+
+@doctor_bp.route('/sync', methods=['POST'])
+def sync_doctors():
+    try:
+        doctors = Doctor.query.all()
+
+        bulk_data = [
+            {"_index": DOCTOR_INDEX, "_id": doctor.id, "_source": {
+                "name": doctor.name,
+                "qualifications": doctor.qualifications,
+                "experience_years": doctor.experience_years,
+                "description": doctor.description,
+                "contact_number": doctor.contact_number,
+                "email": doctor.email
+            }} for doctor in doctors
+        ]
+
+        if not bulk_data:
+            return jsonify({"message": "No doctors found to sync."})
+
+        from elasticsearch.helpers import bulk
+        bulk(es, bulk_data)
+
+        return jsonify({"message": "Doctors synced successfully!"})
+
+    except Exception as e:
+        return jsonify({"error": f"Sync failed: {str(e)}"}), 500
 

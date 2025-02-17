@@ -1,244 +1,649 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Practo Search</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .search-bar {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-        .button-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .button-container button {
-            padding: 12px 20px;
-            margin: 0 10px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .button-container button:hover {
-            background-color: #0056b3;
-        }
-        .results {
-            margin-top: 30px;
-        }
-        .results h2 {
-            margin-bottom: 20px;
-        }
-        .result-item {
-            background-color: #fff;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .result-item h3 {
-            margin: 0 0 10px;
-        }
-        .result-item p {
-            margin: 0;
-        }
-        .error {
-            color: red;
-        }
-        .view-doctors-btn, .view-details-btn {
-            background-color: #28a745;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .view-doctors-btn:hover, .view-details-btn:hover {
-            background-color: #218838;
-        }
-    </style>
+    <!DOCTYPE html>
+    <html lang="en">
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Practo Search</title>
+        <style>
+            
+            body {
+                font-family: 'Arial', sans-serif;
+                background-color: #f4f7fa;
+                margin: 0;
+                padding: 0;
+                color: #333;
+            }
+    
+            
+            .container {
+                max-width: 1100px;
+                margin: 30px auto;
+                padding: 20px;
+                background-color: #fff;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+    
+        
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+                font-size: 28px;
+                color: #1a73e8;
+                background-image: url('static/images/img.jpg'); 
+                background-size: cover;
+                background-position: center;
+                padding: 50px 20px; 
+                border-radius: 8px;
+                color: white;
+            }
+    
+            
+            .search-bar {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
+                border-radius: 10px;
+                border: 1px solid #ccc;
+                margin-bottom: 25px;
+                box-sizing: border-box;
+                transition: border 0.3s;
+            }
+    
+            .search-bar:focus {
+                outline: none;
+                border: 1px solid #1a73e8;
+            }
+    
+            
+            .button-container {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+    
+            .button-container button {
+                padding: 12px 25px;
+                margin: 0 15px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 25px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: background-color 0.3s;
+            }
+    
+            .button-container button:hover {
+                background-color: #45a049;
+            }
+    
+            
+            .results {
+                margin-top: 30px;
+            }
+    
+            .results h2 {
+                font-size: 24px;
+                margin-bottom: 20px;
+                text-align: center;
+                color: #333;
+            }
+    
+            
+            .result-item {
+                background-color: #f9f9f9;
+                padding: 20px;
+                margin-bottom: 15px;
+                border-radius: 8px;
+                box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s, box-shadow 0.3s;
+            }
+    
+            .result-item:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+    
+            .result-item h3 {
+                font-size: 22px;
+                color: #1a73e8;
+            }
+    
+            .result-item p {
+                font-size: 14px;
+                color: #555;
+                margin-bottom: 10px;
+            }
+    
+            .view-details-btn, .view-doctors-btn {
+                background-color: #008CBA;
+                color: white;
+                padding: 8px 18px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 10px;
+                text-transform: uppercase;
+                font-weight: bold;
+                font-size: 14px;
+                transition: background-color 0.3s;
+            }
+    
+            .view-details-btn:hover, .view-doctors-btn:hover {
+                background-color: #0079a1;
+            }
+    
+        
+            .error {
+                color: #f44336;
+                font-size: 16px;
+                text-align: center;
+                margin-top: 20px;
+            }
+    
+
+            .add-buttons {
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                margin-top: 30px;
+            }
+    
+            .add-buttons a {
+                text-decoration: none;
+                padding: 12px 30px;
+                background-color: #4CAF50;
+                color: white;
+                border-radius: 50px;
+                font-size: 16px;
+                transition: background-color 0.3s;
+            }
+    
+            .add-buttons a:hover {
+                background-color: #45a049;
+            }
+    
+            @media (max-width: 768px) {
+                .container {
+                    padding: 15px;
+                }
+    
+                .button-container button {
+                    width: 100%;
+                    padding: 12px;
+                    margin: 5px 0;
+                }
+    
+                .add-buttons a {
+                    padding: 10px 25px;
+                    font-size: 14px;
+                }
+            }
+            .fixed-bottom {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 10px 0;
+    text-align: center;
+}
+.bottom-right-buttons {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 15px;
+        z-index: 1000;
+    }
+
+    .btn-custom {
+        padding: 12px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+        text-decoration: none;
+        color: white;
+    }
+
+    .btn-custom:hover {
+        transform: scale(1.05);
+    }
+
+    .btn-primary-custom {
+        background-color: #007bff;
+    }
+
+    .btn-primary-custom:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-success-custom {
+        background-color: #28a745;
+    }
+
+    .btn-success-custom:hover {
+        background-color: #218838;
+    }
+
+        </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Practo Search</h1>
+            <h1>Health care </h1>
             <input type="text" id="search-bar" class="search-bar" placeholder="Search by name or specialization..." oninput="search()">
         </div>
 
         <div class="button-container">
             <button onclick="showDoctors()">View All Doctors</button>
             <button onclick="showPractices()">View All Clinics</button>
+
         </div>
+
+    <div class="bottom-right-buttons">
+        <a href="{{ url_for('doctor_bp.add_doctor_page') }}" class="btn btn-primary me-3">Add Doctor</a>
+        <a href="{{ url_for('practice_bp.add_practice_page') }}" class="btn btn-success">Add Practice</a>
+
+    </div>
 
         <div class="results" id="results"></div>
         <div id="error-message" class="error"></div>
     </div>
 
+
     <script>
-        function search() {
-            const searchQuery = document.getElementById('search-bar').value.trim();
-            const resultsContainer = document.getElementById('results');
-            const errorMessage = document.getElementById('error-message');
+    async function search() {
+    const searchQuery = document.getElementById('search-bar').value.trim();
+    const resultsContainer = document.getElementById('results');
+    const errorMessage = document.getElementById('error-message');
 
-            errorMessage.innerHTML = "";
-            resultsContainer.innerHTML = "";
+    errorMessage.innerHTML = "";
+    resultsContainer.innerHTML = "";
 
-            if (searchQuery.length < 3) return;
+    if (searchQuery.length < 3) return;
 
-            const isDoctorSearch = searchQuery.toLowerCase().includes("dr");
+    const isDoctorSearch = searchQuery.toLowerCase().includes("dr");
+    
+    let doctorData = [];
+    let practiceData = [];
 
-            const endpoint = isDoctorSearch 
-                ? `http://127.0.0.1:5000/doctors?name=${encodeURIComponent(searchQuery)}` 
-                : `http://127.0.0.1:5000/practices?name=${encodeURIComponent(searchQuery)}`;
-
-            fetch(endpoint)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.length === 0) {
-                        errorMessage.innerHTML = "No results found.";
-                        return;
-                    }
-
-                    data.forEach(item => {
-                        const resultDiv = document.createElement('div');
-                        resultDiv.classList.add('result-item');
-
-                        if (isDoctorSearch) {
-                            resultDiv.innerHTML = `
-                                <h3>Doctor: ${item.name}</h3>
-                                <p>Email: ${item.email}</p>
-                                <p>Qualifications: ${item.qualifications}</p>
-                                <button class="view-details-btn" onclick="loadDoctors(${item.id})">View Details</button>
-                            `;
-                        } else {
-                            resultDiv.innerHTML = `
-                                <h3>Practice: ${item.name}</h3>
-                                <p>City: ${item.city}</p>
-                                <p>Address: ${item.address}</p>
-                                <p>State: ${item.state}</p>
-                                <p>Contact Number: ${item.contact_number}</p>
-                                <button class="view-doctors-btn" onclick="loadDoctors(${item.id})">View Doctors</button>
-                            `;
+    try {
+        if (isDoctorSearch) {
+            const doctorResponse = await fetch("http://127.0.0.1:9200/doctors/_search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: {
+                        match_phrase: {
+                            name: searchQuery
                         }
-
-                        resultsContainer.appendChild(resultDiv);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                    errorMessage.innerHTML = "An error occurred while fetching data.";
-                });
-        }
-
-        function loadDoctors(practiceId) {
-            const resultsContainer = document.getElementById('results');
-
-            fetch(`http://127.0.0.1:5000/practices/${practiceId}/doctors`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        resultsContainer.innerHTML = "No doctors available for this practice.";
-                        return;
                     }
-
-                    let doctorList = "<h4>Doctor List:</h4>";
-
-                    data.forEach(doctor => {
-                        doctorList += `
-                            <div>
-                                <h5>Doctor: ${doctor.name}</h5>
-                                <p>Email: ${doctor.email}</p>
-                                <p>Qualifications: ${doctor.qualifications}</p>
-                                <p>Availability: ${doctor.availability}</p>
-                                <p>Consultation Fee: ₹${doctor.consultation_fee}</p>
-                            </div>
-                        `;
-                    });
-
-                    resultsContainer.innerHTML = doctorList;
                 })
-                .catch(error => {
-                    console.error('Error fetching doctors:', error);
-                    resultsContainer.innerHTML = "An error occurred while fetching doctors.";
-                });
+            });
+
+            if (!doctorResponse.ok) throw new Error(`HTTP error! Status: ${doctorResponse.status}`);
+            const doctorResponseData = await doctorResponse.json();
+            doctorData = doctorResponseData.hits.hits.map(hit => hit._source);
+        } else {
+            const practiceResponse = await fetch("http://127.0.0.1:9200/practices/_search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: {
+                        match_phrase: {
+                            name: searchQuery
+                        }
+                    }
+                })
+            });
+
+            if (!practiceResponse.ok) throw new Error(`HTTP error! Status: ${practiceResponse.status}`);
+            const practiceResponseData = await practiceResponse.json();
+            practiceData = practiceResponseData.hits.hits.map(hit => hit._source);
+        }
+        if (doctorData.length === 0 && practiceData.length === 0) {
+            const specializationDoctorResponse = await fetch("http://127.0.0.1:9200/doctors/_search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: {
+                        match: {
+                            specialization: searchQuery
+                        }
+                    }
+                })
+            });
+
+            if (!specializationDoctorResponse.ok) throw new Error(`HTTP error! Status: ${specializationDoctorResponse.status}`);
+            const specializationDoctorData = await specializationDoctorResponse.json();
+            doctorData = specializationDoctorData.hits.hits.map(hit => hit._source);
+
+            const specializationPracticeResponse = await fetch("http://127.0.0.1:9200/practices/_search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: {
+                        match: {
+                            specialization: searchQuery
+                        }
+                    }
+                })
+            });
+
+            if (!specializationPracticeResponse.ok) throw new Error(`HTTP error! Status: ${specializationPracticeResponse.status}`);
+            const specializationPracticeData = await specializationPracticeResponse.json();
+            practiceData = specializationPracticeData.hits.hits.map(hit => hit._source);
         }
 
-        function showDoctors() {
-            const resultsContainer = document.getElementById('results');
-            fetch('http://127.0.0.1:5000/doctors')
-                .then(response => response.json())
-                .then(data => {
-                    let doctorsList = "<h3>All Doctors:</h3>";
+        if (doctorData.length === 0 && practiceData.length === 0) {
+            errorMessage.innerHTML = "No results found.";
+            return;
+        }
+        
+        doctorData.forEach(item => {
+            const resultDiv = document.createElement("div");
+            resultDiv.classList.add("result-item");
+            resultDiv.innerHTML = `
+                <h3>Doctor: ${item.name}</h3>
+                <p>Specialization: ${item.specialization || "Not specified"}</p>
+                <p>Email: ${item.email}</p>
+                <p>Qualifications: ${item.qualifications}</p>
+            `;
+            resultsContainer.appendChild(resultDiv);
+        });
 
-                    data.forEach(doctor => {
-                        doctorsList += `
-                            <p><strong>${doctor.name}</strong></p>
-                            <p>Email: ${doctor.email}</p>
-                            <p>Qualifications: ${doctor.qualifications}</p>
-                            <hr>
-                        `;
-                    });
+        practiceData.forEach(item => {
+            const resultDiv = document.createElement("div");
+            resultDiv.classList.add("result-item");
+            resultDiv.innerHTML = `
+                <h3>Practice: ${item.name}</h3>
+                <p>Specialization: ${searchQuery}</p>
+                <p>City: ${item.city}</p>
+                <p>Address: ${item.address}</p>
+                <p>State: ${item.state}</p>
+                <p>Contact Number: ${item.contact_number}</p>
+                
+            `;
+            resultsContainer.appendChild(resultDiv);
+        });
 
-                    resultsContainer.innerHTML = doctorsList;
-                })
-                .catch(error => {
-                    console.error('Error fetching doctors:', error);
-                    resultsContainer.innerHTML = "An error occurred while fetching doctors.";
-                });
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        errorMessage.innerHTML = "An error occurred while fetching data.";
+    }
+}
+
+async function loadDoctors(practiceId) {
+    const resultsContainer = document.getElementById('results');
+    const errorMessage = document.getElementById('error-message');
+
+    errorMessage.innerHTML = "";
+    resultsContainer.innerHTML = "";
+
+    const searchBody = {
+        query: {
+            term: {  
+                practice_id: practiceId
+            }
+        }
+    };
+
+    try {
+        const response = await fetch("http://127.0.0.1:9200/doctor_practice_index/_search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(searchBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();  
+            console.error("Elasticsearch Error Response:", errorData);
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        function showPractices() {
+        const responseData = await response.json();
+        const doctors = responseData.hits.hits.map(hit => hit._source);
+
+        if (doctors.length === 0) {
+            errorMessage.innerHTML = "No doctors found for this practice.";
+            return;
+        }
+
+        doctors.forEach(doctor => {
+            fetchDoctorDetails(doctor.doctor_id); 
+        });
+
+    } catch (error) {
+        console.error("Error fetching doctors:", error);
+        errorMessage.innerHTML = "An error occurred while fetching doctors.";
+    }
+}
+
+async function fetchDoctorDetails(doctorId) {
+    const resultsContainer = document.getElementById('results');
+
+    try {
+        const response = await fetch(`http://127.0.0.1:9200/doctors/_search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: {
+                    term: {  
+                        doctor_id: doctorId 
+                    }
+                }
+            })
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+        const responseData = await response.json();
+        const doctorData = responseData.hits.hits.map(hit => hit._source);
+
+        if (doctorData.length === 0) {
+            console.warn("Doctor not found:", doctorId);
+            return;
+        }
+
+        doctorData.forEach(item => {
+            const resultDiv = document.createElement("div");
+            resultDiv.classList.add("result-item");
+
+            resultDiv.innerHTML = `
+                <h3>Doctor: ${item.name}</h3>
+                <p>Specialization: ${item.specialization}</p>
+                <p>Email: ${item.email}</p>
+                <p>Qualifications: ${item.qualifications}</p>
+                <button class="view-details-btn" onclick="loadDoctorDetails('${item.id}')">View Details</button>
+            `;
+
+            resultsContainer.appendChild(resultDiv);
+        });
+
+    } catch (error) {
+        console.error("Error fetching doctor details:", error);
+    }
+}
+
+
+async function searchBySpecialization(specialization) {
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = `<p>Loading doctors...</p>`;
+
+    try {
+        const doctorResponse = await fetch(`http://127.0.0.1:9200/doctors/_search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: {
+                    match: { "specialization": specialization }  
+                }
+            })
+        });
+
+        if (!doctorResponse.ok) {
+            console.error("Elasticsearch Error:", await doctorResponse.text());
+            throw new Error(`HTTP error! Status: ${doctorResponse.status}`);
+        }
+
+        const doctorData = await doctorResponse.json();
+        const doctors = doctorData.hits.hits.map(hit => hit._source);
+
+        if (doctors.length === 0) {
+            resultsContainer.innerHTML = `<p style="color: red;">No doctors found for specialization "${specialization}".</p>`;
+            return;
+        }
+
+        const doctorIds = doctors.map(doctor => doctor.id);
+
+        console.log("Doctors found:", doctors);
+        const practiceResponse = await fetch(`http://127.0.0.1:9200/doctor_practice_index/_search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: {
+                    terms: { "doctor_id": doctorIds }  
+                }
+            })
+        });
+
+        if (!practiceResponse.ok) {
+            console.error("Elasticsearch Error:", await practiceResponse.text());
+            throw new Error(`HTTP error! Status: ${practiceResponse.status}`);
+        }
+
+        const practiceData = await practiceResponse.json();
+        const practiceMap = {}; 
+
+        practiceData.hits.hits.forEach(hit => {
+            practiceMap[hit._source.doctor_id] = hit._source.practice_id;
+        });
+
+        console.log("Doctor-Practice Mapping:", practiceMap);
+        const practiceIds = Object.values(practiceMap);
+
+        const practiceDetailsResponse = await fetch(`http://127.0.0.1:9200/practices/_search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: {
+                    terms: { "id": practiceIds }  
+                }
+            })
+        });
+
+        if (!practiceDetailsResponse.ok) {
+            console.error("Elasticsearch Error:", await practiceDetailsResponse.text());
+            throw new Error(`HTTP error! Status: ${practiceDetailsResponse.status}`);
+        }
+
+        const practiceDetailsData = await practiceDetailsResponse.json();
+        const practiceNames = {}; 
+
+        practiceDetailsData.hits.hits.forEach(hit => {
+            practiceNames[hit._source.id] = hit._source.name;
+        });
+
+        console.log("Practice Names:", practiceNames);
+        let resultHTML = `<h4>Doctors specializing in ${specialization}:</h4>`;
+
+        doctors.forEach(doctor => {
+            const practiceName = practiceNames[practiceMap[doctor.id]] || "Unknown Practice";
+            resultHTML += `
+                <div>
+                    <h5>Doctor: ${doctor.name}</h5>
+                    <p>Practice: ${practiceName}</p>
+                    <p>Email: ${doctor.email}</p>
+                    <p>Qualifications: ${doctor.qualifications}</p>
+                    <p>Consultation Fee: ₹${doctor.consultation_fee}</p>
+                    <button class="view-details-btn" onclick="loadDoctorDetails('${doctor.id}')">View Details</button>
+                </div>
+                <hr>
+            `;
+        });
+
+        resultsContainer.innerHTML = resultHTML;
+
+    } catch (error) {
+        console.error("Error fetching doctors:", error);
+        resultsContainer.innerHTML = `<p style="color: red;">An error occurred while fetching doctors.</p>`;
+    }
+}
+
+async function showDoctors() {
             const resultsContainer = document.getElementById('results');
-            fetch('http://127.0.0.1:5000/practices')
-                .then(response => response.json())
-                .then(data => {
-                    let practicesList = "<h3>All Practices:</h3>";
-
-                    data.forEach(practice => {
-                        practicesList += `
-                            <p><strong>${practice.name}</strong></p>
-                            <p>City: ${practice.city}</p>
-                            <p>Address: ${practice.address}</p>
-                            <p>State: ${practice.state}</p>
-                            <p>Contact Number: ${practice.contact_number}</p>
-                            <hr>
-                        `;
-                    });
-
-                    resultsContainer.innerHTML = practicesList;
-                })
-                .catch(error => {
-                    console.error('Error fetching practices:', error);
-                    resultsContainer.innerHTML = "An error occurred while fetching practices.";
+    
+            try {
+                const response = await fetch("http://127.0.0.1:9200/doctors/_search", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query: { match_all: {} } })
                 });
+    
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    
+                const responseData = await response.json();
+                const data = responseData.hits.hits.map(hit => hit._source);
+    
+                let doctorsList = "<h3>All Doctors:</h3>";
+    
+                data.forEach(doctor => {
+                    doctorsList += `
+                        <p><strong>${doctor.name}</strong></p>
+                        <p>Email: ${doctor.email}</p>
+                        <p>Qualifications: ${doctor.qualifications}</p>
+                        <hr>
+                    `;
+                });
+    
+                resultsContainer.innerHTML = doctorsList;
+    
+            } catch (error) {
+                console.error("Error fetching doctors:", error);
+                resultsContainer.innerHTML = "An error occurred while fetching doctors.";
+            }
+        }
+    
+        async function showPractices() {
+            const resultsContainer = document.getElementById('results');
+    
+            try {
+                const response = await fetch("http://127.0.0.1:9200/practices/_search", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query: { match_all: {} } })
+                });
+    
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    
+                const responseData = await response.json();
+                const data = responseData.hits.hits.map(hit => hit._source);
+    
+                let practicesList = "<h3>All Practices:</h3>";
+    
+                data.forEach(practice => {
+                    practicesList += `
+                        <p><strong>${practice.name}</strong></p>
+                        <p>City: ${practice.city}</p>
+                        <p>Address: ${practice.address}</p>
+                        <p>State: ${practice.state}</p>
+                        <p>Contact Number: ${practice.contact_number}</p>
+                        <hr>
+                    `;
+                });
+    
+                resultsContainer.innerHTML = practicesList;
+    
+            } catch (error) {
+                console.error("Error fetching practices:", error);
+                resultsContainer.innerHTML = "An error occurred while fetching practices.";
+            }
         }
     </script>
+    
+    
 </body>
-</html>
+</html> 
+ 
